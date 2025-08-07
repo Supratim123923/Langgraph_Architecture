@@ -11,16 +11,11 @@ from langgraph.graph import StateGraph, END
 
 load_dotenv()
 class PortfolioState(TypedDict):
-
     query: str
-
     retrieved: list
-
     score: float
-
     answer: str
     isended: str = "END"
-
 
 # Load knowledge base
 with open("data/knowledge_base.txt") as f:
@@ -60,12 +55,21 @@ def generate_node(state):
 
 def evaluate_node(state):
     if evaluator.is_answered(state["answer"]):
-        return state["isended"]
-    return state["isended"]
+        return state
+    else:
+        return state
 
 def rewrite_node(state):
-    new_query = rewriter.rewrite(state["query"])
+    new_query = rewriter.rewrite(state["query"],state["answer"])
     return {"query": new_query}
+
+def conditional_logic(state):
+    if 1<0:
+        return "endnode"
+    else:
+        return "rewrite"
+def end_node(state):
+    print("--------------------END------------------------")
 
 # Build LangGraph
 builder = StateGraph(PortfolioState)
@@ -74,15 +78,20 @@ builder.add_node("grade", grade_node)
 builder.add_node("generate", generate_node)
 builder.add_node("evaluate", evaluate_node)
 builder.add_node("rewrite", rewrite_node)
+builder.add_node("endnode", end_node)
+
 
 builder.set_entry_point("retrieve")
 builder.add_edge("retrieve", "grade")
 builder.add_edge("grade", "generate")
 builder.add_edge("generate", "evaluate")
-builder.add_conditional_edges("evaluate",evaluate_node, 
-                              {"rewrite": "rewrite", "END": END}
-                            )
+# builder.add_conditional_edges("evaluate",evaluate_node, 
+#                               {"rewrite": "rewrite", "END": END}
+#                             )
+builder.add_conditional_edges("evaluate",conditional_logic)
 builder.add_edge("rewrite", "retrieve")
+#builder.add_edge("endnode", "end")
+builder.set_finish_point("endnode")
 
 # builder.set_entry_point("retrieve")
 # builder.add_edge("retrieve", "generate")

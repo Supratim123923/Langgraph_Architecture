@@ -12,7 +12,7 @@ from langchain_openai import OpenAIEmbeddings
 # Constants
 DB_PATH = "vector_store"
 HASH_PATH = "doc_hash.pkl"
-PDF_PATH = "D:/Gen AI/QA Basic ChatBot/Ares XXXI CLO Ltd_new.PDF"
+PDF_PATH = "C:/Users/SYED REJAUL KARIM/S2/AI Project/Langgraph_Architecture/data/Ares XXXI CLO Ltd.PDF"
 KEYWORDS = ["Asset Manager", "Issuer", "Trustee", "Placement Agent"]
 
 # Normalized OpenAI Embeddings for cosine similarity
@@ -65,7 +65,7 @@ class Retriever:
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=500,
             chunk_overlap=50,
-            separators=["\n\n", "\n", ".", ":", " "]
+            separators=["/n/n", "/n", ".", ":", " "]
         )
 
         for page in pages:
