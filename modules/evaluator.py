@@ -1,3 +1,19 @@
+from langchain_openai import ChatOpenAI
+
 class Evaluator:
-    def is_answered(self, content):
-        return "bamboo" in content.lower() and "steel" in content.lower()
+    def __init__(self):
+        self.llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+
+    def is_answered(self, answer: str) -> bool:
+        if not answer.strip():
+            return False
+
+        prompt = (
+            "Is the following answer meaningful, complete, and helpful for the user?\n\n"
+            f"Answer:\n{answer}\n\n"
+            "Respond with only 'yes' or 'no'."
+        )
+
+        response = self.llm.invoke(prompt)
+        result = response.content.strip().lower()
+        return "yes" in result
