@@ -19,6 +19,9 @@ class PortfolioState(TypedDict):
     score: float
 
     answer: str
+    isended: str = "END"
+
+
 # Load knowledge base
 with open("data/knowledge_base.txt") as f:
     docs = f.readlines()
@@ -41,46 +44,57 @@ evaluator = Evaluator()
 def retrieve_node(state):
     query = state["query"]
     retrieved = retriever.retrieve(query)
-    return {"query": query, "retrieved": retrieved}
+    state["retrieved"] = retrieved
+    return state
 
-# def grade_node(state):
-#     score = grader.grade(state["retrieved"])
-#     return {"query": state["query"], "retrieved": state["retrieved"], "score": score}
+def grade_node(state):
+    score = grader.grade(state["retrieved"])
+    state["score"] = score
+    return state
 
 def generate_node(state):
     answer = generator.generate(state["retrieved"], state["query"])
+    state["answer"] = answer
     print(answer)
-    #return {"query": state["query"], "retrieved": state["retrieved"], "score": state["score"], "answer": answer}
+    return state
 
-# def evaluate_node(state):
-#     if evaluator.is_answered(state["answer"]):
-#         return END
-#     return "rewrite"
+def evaluate_node(state):
+    if evaluator.is_answered(state["answer"]):
+        return state["isended"]
+    return state["isended"]
 
-# def rewrite_node(state):
-#     new_query = rewriter.rewrite(state["query"])
-#     return {"query": new_query}
+def rewrite_node(state):
+    new_query = rewriter.rewrite(state["query"])
+    return {"query": new_query}
 
 # Build LangGraph
 builder = StateGraph(PortfolioState)
 builder.add_node("retrieve", retrieve_node)
-#builder.add_node("grade", grade_node)
+builder.add_node("grade", grade_node)
 builder.add_node("generate", generate_node)
-#builder.add_node("evaluate", evaluate_node)
-#builder.add_node("rewrite", rewrite_node)
-
-# builder.set_entry_point("retrieve")
-# builder.add_edge("retrieve", "grade")
-# builder.add_edge("grade", "generate")
-# builder.add_edge("generate", "evaluate")
-# builder.add_conditional_edges("evaluate",evaluate_node, {"rewrite": "rewrite", END: END})
-# builder.add_edge("rewrite", "retrieve")
+builder.add_node("evaluate", evaluate_node)
+builder.add_node("rewrite", rewrite_node)
 
 builder.set_entry_point("retrieve")
-builder.add_edge("retrieve", "generate")
-builder.add_edge("generate", END)
+builder.add_edge("retrieve", "grade")
+builder.add_edge("grade", "generate")
+builder.add_edge("generate", "evaluate")
+builder.add_conditional_edges("evaluate",evaluate_node, 
+                              {"rewrite": "rewrite", "END": END}
+                            )
+builder.add_edge("rewrite", "retrieve")
+
+# builder.set_entry_point("retrieve")
+# builder.add_edge("retrieve", "generate")
+# builder.add_edge("generate", END)
 graph = builder.compile()
-initial_state = {"query": "Effective date targer par as per the document"}
+initial_state = {
+    "query": "Look for Target Par Amount/Effective date par amount/Aggregate par amount",
+    "retrieved": [],
+    "score": 0.0,
+    "answer": "",
+    "isended": "END"
+}
 final_state = graph.invoke(initial_state)
 print("\n✅ Final Answer:")
 print(final_state["answer"])
