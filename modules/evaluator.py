@@ -16,4 +16,13 @@ class Evaluator:
 
         response = self.llm.invoke(prompt)
         result = response.content.strip().lower()
-        return "yes" in result
+        if not result:
+            return False
+        # Ensure we only accept 'yes' or 'no'
+        if result not in ["yes", "no"]:
+            raise ValueError("Evaluator response must be 'yes' or 'no'.")
+        # Return True if the answer is deemed satisfactory
+        if result == "yes":
+            return True
+        
+        return False
