@@ -12,7 +12,7 @@ from langchain_openai import OpenAIEmbeddings
 # Constants
 DB_PATH = "vector_store"
 HASH_PATH = "doc_hash.pkl"
-PDF_PATH = "C:/Users/SYED REJAUL KARIM/S2/AI Project/Langgraph_Architecture/data/Ares XXXI CLO Ltd.PDF"
+PDF_PATH = "./data/Ares XXXI CLO Ltd.PDF"
 KEYWORDS = ["Asset Manager", "Issuer", "Trustee", "Placement Agent"]
 
 # Normalized OpenAI Embeddings for cosine similarity
@@ -31,7 +31,7 @@ class Retriever:
         self.pages: list[Document]
         self.vectordb: FAISS
 
-        embeddings = NormalizedOpenAIEmbeddings(model="text-embedding-3-small")
+        embeddings = NormalizedOpenAIEmbeddings()
         current_hash = self.compute_files_hash([PDF_PATH])
         previous_hash = self.load_prev_hash()
 
@@ -57,7 +57,7 @@ class Retriever:
                     key, value = map(str.strip, line.split(":", 1))
                     if key in KEYWORDS:
                         all_docs.append(Document(
-                            page_content=f"{key}: {value}",
+                            page_content=f"{key.lower()}: {value}",
                             metadata={"section": "kv_block", "key": key}
                         ))
 
@@ -65,7 +65,7 @@ class Retriever:
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=500,
             chunk_overlap=50,
-            separators=["/n/n", "/n", ".", ":", " "]
+            separators=["\n\n", "\n", ".", ":", " "]
         )
 
         for page in pages:
@@ -78,7 +78,7 @@ class Retriever:
 
         return all_docs
 
-    def retrieve(self, query: str, k: int = 5) -> list[Document]:
+    def retrieve(self, query: str, k: int = 15) -> list[Document]:
         results = []
 
         # First, look for keyword blocks
@@ -88,7 +88,7 @@ class Retriever:
                     print(f"🔍 Searching KV blocks for keyword: {kw}")
                     results = self.vectordb.similarity_search(
                         query, k=k,
-                        filter={"section": "kv_block", "key": kw}
+                        filter={"section": "kv_block", "key": kw.lower()}
                     )
                     if results:
                         break  # Stop after finding relevant block

@@ -15,7 +15,7 @@ class PortfolioState(TypedDict):
     retrieved: list
     score: float
     answer: str
-    isended: str = "END"
+    qury_retry_count: int = 0
 
 # Load knowledge base
 with open("data/knowledge_base.txt") as f:
@@ -61,10 +61,18 @@ def evaluate_node(state):
 
 def rewrite_node(state):
     new_query = rewriter.rewrite(state["query"],state["answer"])
-    return {"query": new_query}
+    state["qury_retry_count"] += 1
+    state["query"] = new_query
+    return state
 
 def conditional_logic(state):
-    if 1<0:
+    #check Query retry count
+    if state["qury_retry_count"] >= 3:
+        print("❗️ Maximum query retries reached. Ending process.")
+        return "endnode"
+    # Check if the answer is satisfactory
+    isAnswerd = evaluator.is_answered(state["answer"])
+    if isAnswerd:
         return "endnode"
     else:
         return "rewrite"
@@ -85,10 +93,10 @@ builder.set_entry_point("retrieve")
 builder.add_edge("retrieve", "grade")
 builder.add_edge("grade", "generate")
 builder.add_edge("generate", "evaluate")
-# builder.add_conditional_edges("evaluate",evaluate_node, 
-#                               {"rewrite": "rewrite", "END": END}
-#                             )
-builder.add_conditional_edges("evaluate",conditional_logic)
+builder.add_conditional_edges("evaluate",conditional_logic, 
+                              {"endnode": "endnode", "rewrite": "rewrite"}
+                            )
+#builder.add_conditional_edges("evaluate",conditional_logic)
 builder.add_edge("rewrite", "retrieve")
 #builder.add_edge("endnode", "end")
 builder.set_finish_point("endnode")
@@ -98,11 +106,11 @@ builder.set_finish_point("endnode")
 # builder.add_edge("generate", END)
 graph = builder.compile()
 initial_state = {
-    "query": "Look for Target Par Amount/Effective date par amount/Aggregate par amount",
+    "query": "Look for 'Asset Manager/Collater manager' name in the document ",
     "retrieved": [],
     "score": 0.0,
     "answer": "",
-    "isended": "END"
+    "qury_retry_count": 0
 }
 final_state = graph.invoke(initial_state)
 print("\n✅ Final Answer:")
